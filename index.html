@@ -1,39 +1,61 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Consulta LexML Simples</title>
-  <style>
-    body { font-family: sans-serif; }
-    #resultado { margin-top: 20px; white-space: pre-wrap; }
-  </style>
+<title>Consulta LexML via SRU</title>
+<meta charset="UTF-8">
 </head>
 <body>
-  <h1>Consulta LexML Simples</h1>
-  <form id="formulario">
-    <input type="text" id="termo" placeholder="Digite o termo de pesquisa">
-    <button type="submit">Pesquisar</button>
-  </form>
-  <div id="resultado"></div>
 
-  <script>
-    const form = document.getElementById('formulario');
-    const resultado = document.getElementById('resultado');
+<h1>Consulta LexML</h1>
 
-    form.addEventListener('submit', (event) => {
-      event.preventDefault(); // Impede o envio padrão do formulário
+<input type="text" id="busca" placeholder="Digite seus termos de busca">
+<button onclick="buscar()">Buscar</button>
 
-      const termo = document.getElementById("termo").value;
-      const url = `https://www.lexml.gov.br/sru/sru.php?operation=searchRetrieve&version=1.2&query=${encodeURIComponent(termo)}&startRecord=1&maximumRecords=10&recordSchema=lexml&recordPacking=xml`;
+<div id="resultados"></div>
 
-      fetch(url)
-        .then(response => response.text())
-        .then(data => {
-          resultado.innerText = data;
+<script>
+function buscar() {
+    var termos = document.getElementById("busca").value;
+    var query = encodeURIComponent(termos); // Codifica a consulta corretamente
+    var url = "https://www.lexml.gov.br/busca/SRU?operation=searchRetrieve&version=1.1&query=" + query + "&maximumRecords=20&recordSchema=dc"; // Corrige a URL base
+
+    fetch(url, { mode: 'cors' })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Erro HTTP: ${response.status} ${response.statusText}`); // Inclui o statusText
+            }
+            return response.text();
+        })
+        .then(xml => {
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xml, "text/xml");
+
+            const resultadosDiv = document.getElementById("resultados");
+            resultadosDiv.innerHTML = "";
+
+            const records = xmlDoc.querySelectorAll("record");
+            if (records.length === 0) {
+                resultadosDiv.innerHTML = "<p>Nenhum resultado encontrado.</p>";
+                return;
+            }
+
+            let resultadosHTML = "<ul>";
+            records.forEach(record => {
+                const titulo = record.querySelector("recordData dc\\:title")?.textContent || "Título não encontrado"; // Corrige o seletor CSS
+                const ementa = record.querySelector("recordData dc\\:description")?.textContent || "Ementa não encontrada"; // Corrige o seletor CSS
+                const urn = record.querySelector("recordData urn")?.textContent || "URN não encontrada"; // Adiciona a URN
+                resultadosHTML += `<li><h3>${titulo}</h3><p>${ementa}</p><p><a href="https://www.lexml.gov.br/${urn}" target="_blank">Ver no LexML</a></p></li>`; // Adiciona link para o LexML
+            });
+            resultadosHTML += "</ul>";
+
+            resultadosDiv.innerHTML = resultadosHTML;
         })
         .catch(error => {
-          resultado.innerText = "Erro na consulta: " + error;
+            document.getElementById("resultados").innerHTML = "<p>Erro na busca: " + error.message + "</p>";
+            console.error("Erro detalhado:", error); // Imprime o erro no console
         });
-    });
-  </script>
+}
+</script>
+
 </body>
 </html>
