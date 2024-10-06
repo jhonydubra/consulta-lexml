@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Consulta LexML Simples</title>
+  <style>
+    body { font-family: sans-serif; }
+    #resultado { margin-top: 20px; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <h1>Consulta LexML Simples</h1>
+  <form id="formulario">
+    <input type="text" id="termo" placeholder="Digite o termo de pesquisa">
+    <button type="submit">Pesquisar</button>
+  </form>
+  <div id="resultado"></div>
+
+  <script>
+    const form = document.getElementById('formulario');
+    const resultado = document.getElementById('resultado');
+
+    form.addEventListener('submit', (event) => {
+      event.preventDefault(); // Impede o envio padrão do formulário
+
+      const termo = document.getElementById("termo").value;
+      const url = `https://www.lexml.gov.br/sru/sru.php?operation=searchRetrieve&version=1.2&query=${encodeURIComponent(termo)}&startRecord=1&maximumRecords=10&recordSchema=lexml&recordPacking=xml`;
+
+      fetch(url)
+        .then(response => response.text())
+        .then(data => {
+          resultado.innerText = data;
+        })
+        .catch(error => {
+          resultado.innerText = "Erro na consulta: " + error;
+        });
+    });
+  </script>
+</body>
+</html>
